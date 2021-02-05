@@ -1,0 +1,549 @@
+#Reserved Words: https://dev.mysql.com/doc/refman/5.5/en/keywords.html
+
+
+
+
+create database grocery_website;
+
+
+
+
+create table grocery_website.city
+(cityName varchar(20) primary key,
+state varchar(20));
+
+
+
+
+create table grocery_website.street
+(zip_code varchar(5) primary key,
+streetName varchar(40));
+
+
+
+
+create table grocery_website.address 
+(addressID INT not null auto_increment primary key,
+cityName varchar(20),
+zip_code varchar(5),
+apartment varchar(20),
+foreign key(cityName)
+references grocery_website.city(cityName),
+foreign key(zip_code)
+references grocery_website.street(zip_code));
+
+
+
+
+create table grocery_website.users
+(userName varchar(20),
+userType enum('bcustomer','hcustomer','salesperson','store_manager','region_manager', 'direct_salesperson','admin'),
+pass varchar(20),
+primary key(userName));
+
+
+
+
+create table grocery_website.customer
+(customerName varchar(20),
+customerType enum('bcustomer','hcustomer'),
+pass varchar(20),
+primary key(customerName));
+
+
+
+
+
+
+create table grocery_website.bcustomer
+(b_customerUsername varchar(20),
+first_name char(10),
+last_name char(10),
+business_category char(20),
+company_GAI real,
+addressID INT,
+pass varchar(20),
+email varchar(20),
+tel varchar(10),
+primary key(b_customerUsername),
+foreign key(addressID)
+references grocery_website.address(addressID));
+# check the company_GAI>0 in PHP
+
+
+
+
+
+
+create table grocery_website.hcustomer
+(h_customerUsername varchar(20),
+first_name char(10),
+last_name char(10),
+gender enum('male', 'female'),
+birth_date date,
+income real,
+marriage_status enum('single', 'married', 'divorced', 'widowed'),
+addressID int,
+pass varchar(20),
+email varchar(20),
+tel varchar(10),
+primary key(h_customerUsername),
+foreign key(addressID)
+references grocery_website.address(addressID));
+
+
+
+
+
+
+create table grocery_website.salesperson
+(salespersonName varchar(20),
+first_name char(10),
+last_name char(10),
+gender enum('male', 'female'),
+email char(20),
+birth_date date,
+job_title enum('store_manager', 'region_manager', 'direct_salesperson'), 
+salary real,
+addressID int,
+pass varchar(20),
+primary key(salespersonName),
+foreign key(addressID)
+references grocery_website.address(addressID));
+
+
+
+
+
+
+# Triggers on b_customer, h_customer and salesperson
+# Oh! It works!!!
+create trigger grocery_website.bcus_cus_trigger
+after insert on grocery_website.bcustomer
+for each row 
+insert into grocery_website.customer VALUES(NEW.b_customerUsername,'bcustomer',NEW.pass);
+
+
+
+
+create trigger grocery_website.hcus_cus_trigger
+after insert on grocery_website.hcustomer
+for each row 
+insert into grocery_website.customer VALUES(NEW.h_customerUsername,'hcustomer',NEW.pass);
+
+
+
+
+create trigger grocery_website.cus_usr_trigger
+after insert on grocery_website.customer
+for each row
+insert into grocery_website.users VALUES(NEW.customerName,NEW.customerType,NEW.pass);
+
+
+
+
+create trigger grocery_website.sales_trigger
+after insert on grocery_website.salesperson
+for each row
+insert into grocery_website.users VALUES(NEW.salespersonName,NEW.job_title,NEW.pass);
+
+
+
+
+# finish trigger
+
+
+
+
+
+
+
+
+create table grocery_website.region
+(regionID INT not null auto_increment,
+regionManagerName varchar(20),
+regionName varchar(20),
+primary key(regionID),
+foreign key(regionManagerName)
+references grocery_website.salesperson(salespersonName));
+
+
+
+
+
+
+
+
+## use trigger to do the check for table region  FAILED :(
+#create trigger grocery_website.region_manager_check
+#before insert on grocery_website.region
+#for each row
+#begin
+#if (select job_title from grocery_website.salesperson sp where #sp.salespersonID=salespersonID) ='region_manager' then
+#insert into grocery_website.region select * from grocery_website.region;
+#end;
+
+
+
+
+#check('region_manager'=
+#                 (select job_title
+#                  from grocery_website.salesperson sp
+#                  where sp.salespersonID=salespersonID)));
+
+
+
+
+
+
+
+
+create table grocery_website.store
+(storeID INT not null auto_increment,
+storeName varchar(20),
+addressID INT,
+regionID INT,
+storeManagerName varchar(20),
+primary key(storeID),
+foreign key(storeManagerName)
+references grocery_website.salesperson(salespersonName), 
+foreign key(regionID)
+references grocery_website.region(regionID));
+
+
+# this check does not work
+#check('store_manager'=
+#                 (select job_title
+#                  from salesperson
+#                  where salesperson.salespersonID=store. salespersonID)));
+
+
+
+
+# ??? Might be better to code these checks in PHP
+
+
+
+
+#create trigger checkstoremanager before insert on
+#for each row begin
+#if salespersonID.job_title = 'store_manager' 
+#then insert into store
+#end if
+#end
+
+
+
+
+create table grocery_website.category
+(categoryID INT not null auto_increment,
+gwcname char(20),
+primary key(categoryID));
+
+
+
+
+create table grocery_website.brand
+(brandID INT not null auto_increment,
+gwbname char(20),
+primary key(brandID));
+
+
+
+
+create table grocery_website.store_direct_sale
+(salespersonName varchar(20),
+storeID INT,
+primary key(salespersonName, storeID),
+foreign key(storeID)
+references grocery_website.store(storeID));
+
+
+
+
+## do this check in PHP
+#check('direct_salesperson'=
+#                 (select job_title
+#                  from store
+#                  where store_direct_sale.storeID = store.storeID)))
+
+
+
+
+create table grocery_website.transaction
+(transactionID INT not null auto_increment,
+date date,
+customerName varchar(20),
+in_process boolean,
+storeID int,
+primary key(transactionID),
+foreign key(customerName)
+references grocery_website.customer(customerName),
+foreign key(storeID)
+references grocery_website.store(storeID));
+
+
+
+
+create table grocery_website.product
+(productID INT not null auto_increment,
+gwpname char(20),
+cost real,
+categoryID INT,
+brandID INT,
+description CHAR(255),
+primary key(productID),
+foreign key(categoryID)
+references grocery_website.category(categoryID),
+foreign key(brandID)
+references grocery_website.brand(brandID));
+
+
+
+
+create table grocery_website.storage
+(productID INT,
+storeID INT,
+amount INT,
+primary key(productID, storeID),
+foreign key(productID)
+references grocery_website.product(productID),
+foreign key(storeID)
+references grocery_website.store(storeID));
+
+
+
+
+create table grocery_website.transaction_instance
+(transactionID INT,
+productionID INT,
+quantity INT,
+ranking enum('1','2','3','4','5'),
+primary key(transactionID,productionID),
+foreign key(transactionID)
+references grocery_website.transaction(transactionID),
+foreign key(productionID)
+references grocery_website.product(productID));
+
+
+
+create table grocery_website.promotion
+(promotionID INT not null auto_increment,
+start_date date,
+end_date date,
+discount real,
+productID int,
+primary key(promotionID),
+foreign key(productID)
+references grocery_website.product(productID));
+
+
+
+
+## do the check in PHP
+#check(discount<100 and discount>0)
+
+
+
+INSERT INTO grocery_website.users VALUES('admin','admin','admin');
+
+
+### insert sample data
+INSERT INTO grocery_website.city VALUES ('Pittsburgh','PA'); 
+INSERT INTO grocery_website.city VALUES ('NewYork City','NY'); 
+INSERT INTO grocery_website.city VALUES ('San Diego','CA'); 
+INSERT INTO grocery_website.city VALUES ('Washington','CA'); 
+
+
+INSERT INTO grocery_website.street VALUES ('15213','Center ST'); 
+INSERT INTO grocery_website.street VALUES ('16303','Fifth ST');
+INSERT INTO grocery_website.street VALUES ('17001','Sixth ST'); 
+INSERT INTO grocery_website.street VALUES ('15333','Sixth ST');
+INSERT INTO grocery_website.street VALUES ('15366','Sixth ST');
+INSERT INTO grocery_website.address VALUES (null,'Pittsburgh','15213','Bellfied'); 
+INSERT INTO grocery_website.address VALUES (null,'NewYork City','16303','White Apt'); 
+INSERT INTO grocery_website.address VALUES (null,'San Diego','15333','Green Apt'); 
+INSERT INTO grocery_website.address VALUES (null,'Washington','17001','Blue Apt');
+INSERT INTO grocery_website.address VALUES (null,'NewYork City','17001','Red Apt');
+INSERT INTO grocery_website.address VALUES (null,'Washington','15333','Pink Apt');
+INSERT INTO grocery_website.address VALUES (null,'NewYork City','15366','what Apt');
+INSERT INTO grocery_website.address VALUES (null,'Washington','17001','Blue Apt');
+INSERT INTO grocery_website.address VALUES (null,'NewYork City','17001','Red Apt');
+INSERT INTO grocery_website.address VALUES (null,'Washington','15366','Pink Apt');
+INSERT INTO grocery_website.address VALUES (null,'NewYork City','16303','what Apt');
+
+
+INSERT INTO grocery_website.hcustomer VALUES('zz','zhou','zhu','female','1990-12-02',1000,'single',1,'1','zz@gmail.com','1231231233');
+INSERT INTO grocery_website.hcustomer VALUES('gxs','xiaoshi','guo','female','1995-10-31',8000,'single',2,'1','gxs@gmail.com','3213213211');
+INSERT INTO grocery_website.bcustomer VALUES('erin','erin','prince','Bank',100000,2,'1','ep@gmail.com','3213213211');
+INSERT INTO grocery_website.hcustomer VALUES('dan','daniel','rad','male','1989-07-23',5000,'married',3,'1','gxs@gmail.com','3213213211');
+
+
+INSERT INTO grocery_website.salesperson VALUES('emma','emma','waston','female','ew@gmail.com','1990-05-18','region_manager',5000,3,'emma');
+INSERT INTO grocery_website.salesperson VALUES('xiaoshi','xiao','guo','female','xs@gmail.com','1990-01-01','store_manager',10000,1,'1');
+INSERT INTO grocery_website.salesperson VALUES('Jack','emma','waston','female','ew@gmail.com','1990-05-18','region_manager',5000,3,'emma');
+INSERT INTO grocery_website.salesperson VALUES('Jackson','emma','waston','female','ew@gmail.com','1990-05-18','region_manager',5000,3,'emma');
+INSERT INTO grocery_website.salesperson VALUES('Johnson','xiao','guo','female','xs@gmail.com','1990-01-01','store_manager',10000,1,'1');
+INSERT INTO grocery_website.salesperson VALUES('Bill','emma','waston','female','ew@gmail.com','1990-05-18','region_manager',5000,3,'emma');
+INSERT INTO grocery_website.salesperson VALUES('Mary','emma','waston','female','ew@gmail.com','1990-05-18','region_manager',5000,3,'emma');
+INSERT INTO grocery_website.salesperson VALUES('Lisa','xiao','guo','female','xs@gmail.com','1990-01-01','store_manager',10000,1,'1');
+INSERT INTO grocery_website.salesperson VALUES('James','emma','waston','female','ew@gmail.com','1990-05-18','region_manager',5000,3,'emma');
+INSERT INTO grocery_website.salesperson VALUES('Jane','emma','waston','female','ew@gmail.com','1990-05-18','region_manager',5000,3,'emma');
+INSERT INTO grocery_website.salesperson VALUES('Laura','emma','waston','female','ew@gmail.com','1990-05-18','region_manager',5000,3,'emma');
+INSERT INTO grocery_website.salesperson VALUES('Sarah','xiao','guo','female','xs@gmail.com','1990-01-01','store_manager',10000,1,'1');
+INSERT INTO grocery_website.salesperson VALUES('Ada','emma','waston','female','ew@gmail.com','1990-05-18','region_manager',5000,3,'emma');
+
+
+
+
+INSERT INTO grocery_website.region VALUES(null,'emma','New York Region');
+INSERT INTO grocery_website.region VALUES(null,'Jack','Alabama');
+INSERT INTO grocery_website.region VALUES(null,'Jackson','Alaska');
+INSERT INTO grocery_website.region VALUES(null,'Johnson','Colorado');
+INSERT INTO grocery_website.region VALUES(null,'Bill','Florida');
+INSERT INTO grocery_website.region VALUES(null,'Mary','Georgia');
+INSERT INTO grocery_website.region VALUES(null,'Lisa','Hawaii');
+INSERT INTO grocery_website.region VALUES(null,'James','Kentucky');
+INSERT INTO grocery_website.region VALUES(null,'Jane','Minnesota');
+INSERT INTO grocery_website.region VALUES(null,'Laura','Maine');
+INSERT INTO grocery_website.region VALUES(null,'Sarah','Nevada');
+INSERT INTO grocery_website.region VALUES(null,'Laura','New Hampshire');
+INSERT INTO grocery_website.region VALUES(null,'Sarah','Ohio');
+
+INSERT INTO grocery_website.store VALUES(null,'Happy New Store',2,1,'xiaoshi');
+
+
+
+
+INSERT INTO grocery_website.category VALUES(null,'Baby Products');
+INSERT INTO grocery_website.category VALUES(null,'Bathroom and Shower');
+INSERT INTO grocery_website.category VALUES(null,'Beverages');
+INSERT INTO grocery_website.category VALUES(null,'Bread and Desserts');
+INSERT INTO grocery_website.category VALUES(null,'Canned Goods');
+INSERT INTO grocery_website.category VALUES(null,'Candy');
+INSERT INTO grocery_website.category VALUES(null,'Dairy');
+
+
+INSERT INTO grocery_website.brand VALUES(null,'Gerber');
+INSERT INTO grocery_website.brand VALUES(null,'Johnson\'s');
+INSERT INTO grocery_website.brand VALUES(null,'Equate');
+INSERT INTO grocery_website.brand VALUES(null,'Trojan');
+INSERT INTO grocery_website.brand VALUES(null,'Garnier Fructis');
+INSERT INTO grocery_website.brand VALUES(null,'Suave');
+INSERT INTO grocery_website.brand VALUES(null,'Starbucks');
+INSERT INTO grocery_website.brand VALUES(null,'Cone');
+INSERT INTO grocery_website.brand VALUES(null,'Jello');
+INSERT INTO grocery_website.brand VALUES(null,'Campbell\'s');
+
+
+
+
+INSERT INTO grocery_website.product VALUES(null,'Gerber 2nd Foods Squash Corn & Chicken',2.07,1,4,'healthy'); 
+INSERT INTO grocery_website.product VALUES(null,'Portable mushroom 32 oz',4.98,1,5,'Our selection of juice gives you an exciting spectrum of savory choices that are great'); 
+INSERT INTO grocery_website.product VALUES(null,'Banana Juice',2.07,2,3,'Our selection of juice gives you an exciting spectrum of savory choices that are great'); 
+INSERT INTO grocery_website.product VALUES(null,'Powder, 12 oz',6.04,1,4,'no harm'); 
+INSERT INTO grocery_website.product VALUES(null,'Pittsburgh Squash Corn & Chicken',2.07,1,5,'healthy'); 
+INSERT INTO grocery_website.product VALUES(null,'2012 Wine',4.98,1,3,'Our selection of juice gives you an exciting spectrum of savory choices that are great'); 
+INSERT INTO grocery_website.product VALUES(null,'milk shake',2.07,2,7,'fresh'); 
+INSERT INTO grocery_website.product VALUES(null,'sugar, 22 oz',6.04,1,6,'no harm'); INSERT INTO grocery_website.product VALUES(null,'Squash',2.07,1,5,'Whether you are grilling, searing or broiling, we are sure to deliver unparalleled taste to your table'); 
+INSERT INTO grocery_website.product VALUES(null,'Green Grape Juice 32 oz',4.98,1,3,'fresh'); 
+INSERT INTO grocery_website.product VALUES(null,'Red Grape Juice',2.07,1,3,'Our selection of juice gives you an exciting spectrum of savory choices that are great'); 
+INSERT INTO grocery_website.product VALUES(null,'chocolate, 12 bars',6.04,1,2,'yummy'); 
+INSERT INTO grocery_website.product VALUES(null,'White Grape Juice 12 oz',4.98,1,3,'fresh'); 
+INSERT INTO grocery_website.product VALUES(null,'yogurt porfait',1.07,2,7,'Our selection of juice gives you an exciting spectrum of savory choices that are great'); 
+INSERT INTO grocery_website.product VALUES(null,'rose',6.04,1,2,'no harm'); 
+INSERT INTO grocery_website.product VALUES(null,'chicken, 12 lbs',2.07,1,5,'Whether you are grilling, searing or broiling, we are sure to deliver unparalleled taste to your table'); 
+INSERT INTO grocery_website.product VALUES(null,'vegetable sushi 22 oz',5,1,4,'fresh'); 
+INSERT INTO grocery_website.product VALUES(null,'meat',2.07,6,1,'Whether you are grilling, searing or broiling, we are sure to deliver unparalleled taste to your table'); 
+INSERT INTO grocery_website.product VALUES(null,'turkey, 12 oz',6.04,1,4,'Whether you are grilling, searing or broiling, we are sure to deliver unparalleled taste to your table'); 
+INSERT INTO grocery_website.product VALUES(null,'Maximize',3.07,1,1,'healthy'); 
+INSERT INTO grocery_website.product VALUES(null,'strawberry  32 oz',5.98,1,4,'we operated business dedicated to preparing the highest quality premium fruit'); 
+INSERT INTO grocery_website.product VALUES(null,'shrimp',2.07,2,1,'Whether you are grilling, searing or broiling, we are sure to deliver unparalleled taste to your table'); 
+INSERT INTO grocery_website.product VALUES(null,'Hershey chocolate, 22 oz',6.04,1,4,'yummy'); 
+INSERT INTO grocery_website.product VALUES(null,'green apple',2.07,2,3,'fresh');
+
+
+
+
+INSERT INTO grocery_website.product VALUES(null,'colorful pepper, 12 oz',6.04,5,4,'no harm'); INSERT INTO grocery_website.product VALUES(null,'Corn',2.07,6,4,'healthy'); INSERT INTO grocery_website.product VALUES(null,'White Grape',4.98,1,3,'fresh'); INSERT INTO grocery_website.product VALUES(null,'Banana Juice',2.07,2,3,'Our selection of juice gives you an exciting spectrum of savory choices that are great'); INSERT INTO grocery_website.product VALUES(null,'carrot, 3 lb',6.04,3,4,'we operated business dedicated to preparing the highest quality premium vegetable'); INSERT INTO grocery_website.product VALUES(null,'cabbage',2.07,5,4,'we operated business dedicated to preparing the highest quality premium vegetable'); INSERT INTO grocery_website.product VALUES(null,'White Grape Juice 32 oz',4.98,1,3,'fresh'); INSERT INTO grocery_website.product VALUES(null,'spinach',2.07,2,5,'we operated business dedicated to preparing the highest quality premium vegetable'); INSERT INTO grocery_website.product VALUES(null,'onion',6.04,7,5,'you could grill and broil, we are sure to deliver unparalleled taste to your desk'); INSERT INTO grocery_website.product VALUES(null, 'canned_tuna_fish',6,2,5,'fresh and delicious why not choose our brand');
+
+
+
+
+
+INSERT INTO grocery_website.store VALUES(null,'Benedum Store',11, 1, 'Jack');
+INSERT INTO grocery_website.store VALUES(null,'Fifth_Store',1, 2, 'Jackson');
+INSERT INTO grocery_website.store VALUES(null,'Princess Store',2, 3, 'Johnson');
+INSERT INTO grocery_website.store VALUES(null,'Sakes Store',3, 4, 'Bill');
+INSERT INTO grocery_website.store VALUES(null,'Dylan Store',4, 5, 'Mary');
+INSERT INTO grocery_website.store VALUES(null,'Shawn Store',5, 6, 'Lisa');
+INSERT INTO grocery_website.store VALUES(null,'Fancy Store',6, 7, 'James');
+INSERT INTO grocery_website.store VALUES(null,'Highland Store',7, 8, 'Jane');
+INSERT INTO grocery_website.store VALUES(null,'Pitt Store',8, 9, 'Laura');
+INSERT INTO grocery_website.store VALUES(null,'PP2 Store',9, 10, 'Sarah');
+INSERT INTO grocery_website.store VALUES(null,'Lawrence Avenue Store',10, 11, 'Ada');
+ 
+
+
+
+
+INSERT INTO grocery_website.storage VALUES (1,1,100);
+INSERT INTO grocery_website.storage VALUES (2,1,50);
+INSERT INTO grocery_website.storage VALUES (3,1,10);
+INSERT INTO grocery_website.storage VALUES (4,1,200);
+INSERT INTO grocery_website.storage VALUES (5,1,300);
+INSERT INTO grocery_website.storage VALUES (1,2,200);
+INSERT INTO grocery_website.storage VALUES (2,2,600);
+INSERT INTO grocery_website.storage VALUES (4,2,20);
+INSERT INTO grocery_website.storage VALUES (3,2,30);
+INSERT INTO grocery_website.storage VALUES (6,2,40);
+INSERT INTO grocery_website.storage VALUES (5,2,15);
+INSERT INTO grocery_website.storage VALUES (4,3,130);
+INSERT INTO grocery_website.storage VALUES (5,3,150);
+INSERT INTO grocery_website.storage VALUES (1,3,160);
+INSERT INTO grocery_website.storage VALUES (2,3,120);
+INSERT INTO grocery_website.storage VALUES (3,3,140);
+INSERT INTO grocery_website.storage VALUES (1,4,120);
+INSERT INTO grocery_website.storage VALUES (2,4,110);
+INSERT INTO grocery_website.storage VALUES (3,4,10);
+INSERT INTO grocery_website.storage VALUES (4,4,50);
+INSERT INTO grocery_website.storage VALUES (5,4,60);
+INSERT INTO grocery_website.storage VALUES (1,5,70);
+INSERT INTO grocery_website.storage VALUES (2,5,190);
+INSERT INTO grocery_website.storage VALUES (3,5,15);
+INSERT INTO grocery_website.storage VALUES (5,6,150);
+INSERT INTO grocery_website.storage VALUES (1,7,160);
+INSERT INTO grocery_website.storage VALUES (2,8,120);
+INSERT INTO grocery_website.storage VALUES (3,9,140);
+
+
+
+INSERT INTO grocery_website.transaction VALUES (NULL, '2016-12-05', 'zz', '1',1);
+INSERT INTO grocery_website.transaction VALUES (NULL, '2016-10-30', 'zz', '1',2);
+INSERT INTO grocery_website.transaction VALUES (NULL, '2016-11-17', 'erin', '0',1);
+INSERT INTO grocery_website.transaction VALUES (NULL, '2016-09-19', 'gxs', '1',3);
+
+INSERT INTO grocery_website.transaction_instance VALUES(1,4,5,null);
+INSERT INTO grocery_website.transaction_instance VALUES(1,6,2,null);
+INSERT INTO grocery_website.transaction_instance VALUES(1,2,1,null);
+INSERT INTO grocery_website.transaction_instance VALUES(2,8,2,null);
+INSERT INTO grocery_website.transaction_instance VALUES(2,6,2,null);
+INSERT INTO grocery_website.transaction_instance VALUES(2,1,1,null);
+INSERT INTO grocery_website.transaction_instance VALUES(3,9,3,null);
+INSERT INTO grocery_website.transaction_instance VALUES(3,6,2,null);
+INSERT INTO grocery_website.transaction_instance VALUES(4,5,1,null);
+
+
+
+
+INSERT INTO grocery_website.promotion VALUES(null,'2016-12-01','2016-12-31',0.1,1);
+INSERT INTO grocery_website.promotion VALUES(null,'2016-12-03','2017-01-01',0.2,2);
+INSERT INTO grocery_website.promotion VALUES(null,'2016-10-15','2016-11-31',0.25,3);
+INSERT INTO grocery_website.promotion VALUES(null,'2016-09-13','2016-12-15',0.3,1);
+
+
+
+
+
+
+

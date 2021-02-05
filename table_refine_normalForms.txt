@@ -1,0 +1,189 @@
+1. address(addressID, state, city, street, apartment, zip_code)
+addressID -> state
+addressID -> city
+city -> state
+addressID -> street
+addressID -> apartment
+addressID -> zip_code
+street -> zip_code
+
+We seperate these address-related attributes to three tables:
+1.1 address(addressID, cityID, street, apartment)
+{addressID -> cityID, addressID -> street, addressID -> apartment}
+
+For {addressID -> cityID, street, apartment}, addressID is the key, the relation is in BCNF.
+
+1.2 city(cityID, cityName, state)
+{cityID -> cityName, cityID -> state}
+
+For {cityID -> cityName, state}, cityID is the key, the relation is in BCNF.
+
+1.3 street(streetID, streetName, zip_code)
+{streetID -> streetName, streetID -> zip_code}
+
+For {streetID -> streetName, zip_code}, streetID is the key, the relation is in BCNF.
+
+
+2. user(userID, userType, userTypeID, userName, password)
+userID -> userType
+userID -> userTypeID
+userID -> userName
+userID -> password
+
+For {userID -> userType, userTypeID, userName, password}, userID is the key, the relation is in BCNF.
+
+
+3. bcustomer(b_customerID, first_name, last_name, business_category, company_GAI, addressID)
+b_customerID -> first_name
+b_customerID -> last_name
+b_customerID -> business_category
+b_customerID -> company_GAI
+b_customerID -> addressID
+fisrt_name, last_name -> business_category
+fisrt_name, last_name -> company_GAI
+fisrt_name, last_name -> addressID
+
+For {b_customerID -> first_name, last_name, business_category, company_GAI, addressID, fisrt_name, last_name -> business_category, company_GAI, addressID}, we know that b_customerID is the key, but the set of (first_name, last_name) is not key, so we seperate the table into two.
+
+3.1 bcustomer_name(b_customerID, first_name, last_name)
+{b_customerID -> first_name, b_customerID -> last_name}
+
+b_customerID is the key, so the relation is in BCNF.
+
+3.2 bcustomer(b_customerID, business_category, company_GAI, addressID)
+{b_customerID -> business_category, fisrt_name, last_name -> company_GAI, fisrt_name, last_name -> addressID}
+
+b_customerID is the key, so the relation is in BCNF.
+
+
+4. hcustomer(h_customerID, first_name, last_name, gender, birth_date, income, marrige_status, addressID)
+h_customerID -> first_name
+h_customerID -> last_name
+h_customerID -> gender
+h_customerID -> birth_date
+h_customerID -> income
+h_customerID -> marrige_status
+h_customerID -> addressID
+fisrt_name, last_name -> gender
+fisrt_name, last_name -> birth_date
+fisrt_name, last_name -> income
+fisrt_name, last_name -> marrige_status
+fisrt_name, last_name -> addressID
+
+Similar to b_customer, we seperate the table into two.
+4.1 hcustomer_name(h_customerID, first_name, last_name)
+{h_customerID -> first_name, h_customerID -> last_name}
+
+h_customerID is the key, so the relation is in BCNF.
+
+4.2 hcustomer(h_customerID, gender, birth_date, income, marrige_status, addressID)
+{h_customerID -> gender, birth_date, income, marrige_status, addressID}
+
+h_customerID is the key, so the relation is in BCNF.
+
+
+5. salesperson(salespersonID, first_name, last_name, gender, email, birth_date, job_title, salary, addressID)
+salespersonID -> first_name
+salespersonID -> last_name
+salespersonID -> gender
+salespersonID -> email
+salespersonID -> birth_date
+salespersonID -> job_title
+salespersonID -> salary
+salespersonID -> addressID
+fisrt_name, last_name -> gender
+fisrt_name, last_name -> email
+fisrt_name, last_name -> birth_date
+fisrt_name, last_name -> job_title
+fisrt_name, last_name -> salary
+fisrt_name, last_name -> addressID
+
+Similar to b_customer and h_customer, we seperate the table into two.
+5.1 salesperson_name(salespersonID, first_name, last_name)
+{salespersonID -> first_name, last_name}
+
+salespersonID is the key, so the relation is in BCNF.
+
+5.2 salesperson_name(salespersonID, gender, email, birth_date, job_title, salary, addressID)
+{salespersonID -> gender, email, birth_date, job_title, salary, addressID}
+
+salespersonID is the key, so the relation is in BCNF.
+
+
+6. customer(customerID, customerType, typeID)
+customerID -> customerType
+customerID -> typeID
+
+For {customerID -> customerType, typeID}, the customerID is the key, the relation is in BCNF.
+
+
+7. store(storeID, addressID, regionID, salespersonID)
+storeID -> addressID, regionID, salespersonID
+
+We can see that storeID is the key, so the relation is in BCNF.
+
+
+8. category(categoryID, name)
+categoryID -> name
+
+We can see that categoryID is the key, so the relation is in BCNF.
+
+
+9. brand(brandID, name)
+brandID -> name
+
+We can see that brandID is the key, so the relation is in BCNF.
+
+
+10. store_derict_sale(salespersonID, storeID)
+salespersonID, storeID -> salespersonID, storeID
+
+Both attributes in the relation compose the key, so the relation is in BCNF.
+
+
+11. transaction(transactionID, date, customerID)
+transactionID -> date
+transactionID -> customerID
+
+For transactionID is the key, the relation is in BCNF.
+
+
+12.product(productID, name, cost, categoryID, brandID)
+productID -> name
+productID -> cost
+productID -> categoryID
+productID -> brandID
+
+Obviously, productID is the key in the relation, so the relation is in BCNF.
+
+
+13.storage(productID, storeID, amount)
+productID, storeID -> amount
+
+The set of (productID, storeID) is the key, so the relations is in BCNF.
+
+
+14. region(regionID, name, salespersonID)
+regionID -> name
+regionID -> salespersonID
+
+region ID is key, so the relation is in BCNF.
+
+
+15. transaction_instance(transactionID, productionID, ranking)
+transactionID -> productionID, ranking
+
+transactionID is key, so the relation is in BCNF.
+
+
+16. promotion(promotionID, start_date, end_date, discount, productID)
+promotionID -> start_date
+promotionID -> end_date
+promotionID -> discount
+promotionID -> productID
+
+For {promotionID -> start_date, end_date, discount, productID}, we know that promotionID is the key, so the relation is in BCNF.
+
+
+
+
